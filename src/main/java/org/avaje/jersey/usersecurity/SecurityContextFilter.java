@@ -14,7 +14,7 @@ import com.sun.jersey.spi.container.ResourceFilter;
 /**
  * Jersey Filter that sets the SecurityContext into the ContainerRequest.
  * <p>
- * Typically a managed Spring bean with appropriate SecurityContextService 
+ * Typically a managed Spring bean with appropriate SecurityContextService
  * injected.
  * </p>
  */
@@ -22,27 +22,40 @@ import com.sun.jersey.spi.container.ResourceFilter;
 @Provider
 public class SecurityContextFilter implements ResourceFilter, ContainerRequestFilter {
 
-  
-  private final SecurityContextService securityService;
-  
+  private final WebSessionRepository sessionRepository;
+
+  private final WebUserRepository userRepository;
+
   /**
    * Construct with a SecurityContextService implementation.
    */
   @Inject
-  public SecurityContextFilter(SecurityContextService securityService) {
-    this.securityService = securityService;
+  public SecurityContextFilter(WebSessionRepository sessionRepository, WebUserRepository userRepository) {
+    this.sessionRepository = sessionRepository;
+    this.userRepository = userRepository;
   }
-  
+
+  protected SecurityContext getSecurityContext(ContainerRequest request) {
+
+    WebSession session = sessionRepository.getSession(request);
+
+    WebUser user = null;
+    if (session != null && session.getUserId() != null) {
+      user = userRepository.getUser(session);
+    }
+
+    return new WebSecurityContext(session, user);
+  }
+
   /**
    * Sets the SecurityContext into the ContainerRequest.
    */
   public ContainerRequest filter(ContainerRequest request) {
-    
-    SecurityContext ctx = securityService.getSecurityContext(request);  
-    request.setSecurityContext(ctx);
+
+    request.setSecurityContext(getSecurityContext(request));
     return request;
   }
-  
+
   public ContainerRequestFilter getRequestFilter() {
     return this;
   }

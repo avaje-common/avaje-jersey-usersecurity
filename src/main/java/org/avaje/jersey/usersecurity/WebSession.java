@@ -6,7 +6,7 @@ package org.avaje.jersey.usersecurity;
 public interface WebSession {
 
   /**
-   * Return true if the session is secure.
+   * Return true if the request was made on a secure channel like HTTPS.
    */
   public boolean isSecure();
 
